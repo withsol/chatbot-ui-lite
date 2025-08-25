@@ -38,7 +38,12 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
         text += content.items.map((s: any) => s.str).join(" ") + "\n";
       }
 
-      handleSendMessage(`File uploaded: ${file.name}\n\n${text}`);
+      // Break text into ~1000 character chunks
+const chunkSize = 1000;
+for (let i = 0; i < text.length; i += chunkSize) {
+  const chunk = text.slice(i, i + chunkSize);
+  handleSendMessage(`File: ${file.name} (part ${Math.floor(i/chunkSize)+1})\n\n${chunk}`);
+}
     } else {
       // Default: treat as plain text
       const text = await file.text();
