@@ -65,11 +65,11 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
         {/* Send button inside bubble */}
         <button
           onClick={sendMessage}
-          disabled={!message.trim() && !file}
-          className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ml-2
-            ${message.trim() || file
-              ? "bg-sol-accent text-white hover:bg-sol-accentHover"
-              : "bg-neutral-200 text-neutral-400 cursor-default"}`}
+  disabled={!message.trim() && !file}
+  className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200 ml-2
+    ${message.trim() || file
+      ? "bg-sol-accent text-white hover:bg-sol-accentHover hover:-translate-y-0.5"
+      : "bg-neutral-200 text-neutral-400 cursor-default"}`}
         >
           ↑
         </button>
