@@ -34,11 +34,12 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
   }, [message]);
 
   return (
-    <div className="flex items-end gap-2 px-2 py-2">
-      {/* Full rounded container */}
+    <div className="flex items-center px-2 py-2">
+      {/* Full pill bubble with everything inside */}
       <div className="flex items-center flex-1 bg-white border border-neutral-200 rounded-full px-3 py-2 shadow-sm">
-        {/* + attachment button */}
-        <label className="cursor-pointer text-lg text-sol-subtext hover:text-sol-accent transition flex-shrink-0 mr-2">
+        
+        {/* + button */}
+        <label className="cursor-pointer text-xl text-sol-accent hover:opacity-80 transition mr-3 flex-shrink-0">
           +
           <input
             type="file"
@@ -50,7 +51,7 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
           />
         </label>
 
-        {/* Message box (auto-grow textarea) */}
+        {/* Message input */}
         <textarea
           ref={textareaRef}
           className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 text-base leading-snug max-h-40 overflow-y-auto"
@@ -60,19 +61,19 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-      </div>
 
-      {/* Send button (active only when typing) */}
-      <button
-        onClick={sendMessage}
-        disabled={!message.trim() && !file}
-        className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors
-          ${message.trim() || file
-            ? "bg-sol-accent text-white hover:bg-sol-accentHover"
-            : "bg-neutral-200 text-neutral-400 cursor-default"}`}
-      >
-        ➤
-      </button>
+        {/* Send button inside bubble */}
+        <button
+          onClick={sendMessage}
+          disabled={!message.trim() && !file}
+          className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ml-2
+            ${message.trim() || file
+              ? "bg-sol-accent text-white hover:bg-sol-accentHover"
+              : "bg-neutral-200 text-neutral-400 cursor-default"}`}
+        >
+          ↑
+        </button>
+      </div>
     </div>
   );
 }
