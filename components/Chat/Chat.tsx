@@ -5,6 +5,24 @@ import { ChatLoader } from "./ChatLoader";
 import { ChatMessage } from "./ChatMessage";
 import { ResetChat } from "./ResetChat";
 
+----
+const solSystemPrompt =
+  process.env.NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT ||
+  "You are Sol, an emotionally intelligent, presence-first coach and partner. Always meet the human before moving to strategy, invite small aligned steps, and weave identity evolution into every response. Speak with warmth, clarity, and consent.";
+
+const messagesWithSystem = [
+  { role: "system", content: solSystemPrompt },
+  ...messages,
+];
+
+const response = await fetch("/api/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ messages: messagesWithSystem, model }),
+});
+----
+
+
 interface Props {
   messages: Message[];
   loading: boolean;
