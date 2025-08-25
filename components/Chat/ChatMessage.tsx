@@ -22,7 +22,7 @@ export const ChatMessage: FC<Props> = ({ message }) => {
         setDisplayedText(message.content.slice(0, i));
         i++;
         if (i > message.content.length) clearInterval(interval);
-      }, 25); // speed (ms per character)
+      }, 5); // speed (ms per character)
       return () => clearInterval(interval);
     }
   }, [isAssistant, message.content]);

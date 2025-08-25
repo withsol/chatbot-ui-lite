@@ -6,11 +6,11 @@ module.exports = {
     colors: {
       sol: {
         background: "#FAF9F7", // warm neutral (main background)
-        bubble: "#F0EEEB",    // assistant bubble
+        bubble: "#Ffffff",    // assistant bubble
         accent: "#C88A65",    // clay accent (user bubble + send btn)
         accentHover: "#B27655",
-        text: "#2D2D2D",      // deep neutral text
-        subtext: "#6B6B6B",   // muted gray labels
+        text: "#185a5f",      // deep neutral gray-green text
+        subtext: "#4f7f81ff",   // muted gray-green labels
       },
     },
   },
