@@ -1,17 +1,9 @@
-import { IconDots } from "@tabler/icons-react";
-import { FC } from "react";
-
-interface Props {}
-
-export const ChatLoader: FC<Props> = () => {
+export const ChatLoader = () => {
   return (
-    <div className="flex flex-col flex-start">
-      <div
-        className={`flex items-center bg-neutral-200 text-neutral-900 rounded-2xl px-4 py-2 w-fit`}
-        style={{ overflowWrap: "anywhere" }}
-      >
-        <IconDots className="animate-pulse" />
-      </div>
+    <div className="flex items-center space-x-1 px-4 py-3 bg-sol-bubble rounded-lg shadow-sm animate-fadeInUp">
+      <div className="w-2 h-2 bg-sol-subtext rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+      <div className="w-2 h-2 bg-sol-subtext rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+      <div className="w-2 h-2 bg-sol-subtext rounded-full animate-bounce"></div>
     </div>
   );
 };

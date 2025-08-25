@@ -22,62 +22,20 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type === "application/pdf") {
-      // Dynamically import pdfjs to avoid bloating initial bundle
-     const pdfjsLib = await import("pdfjs-dist");
-
-      const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map((s: any) => s.str).join(" ") + "\n";
-      }
-
-      // Break text into ~1000 character chunks
-const chunkSize = 1000;
-for (let i = 0; i < text.length; i += chunkSize) {
-  const chunk = text.slice(i, i + chunkSize);
-  handleSendMessage(`File: ${file.name} (part ${Math.floor(i/chunkSize)+1})\n\n${chunk}`);
-}
-    } else {
-      // Default: treat as plain text
-      const text = await file.text();
-      handleSendMessage(`File uploaded: ${file.name}\n\n${text}`);
-    }
-
-    // Reset input so same file can be uploaded again if needed
-    e.target.value = "";
-  };
-
   return (
-    <div className="flex items-center gap-2 p-2 border-t border-gray-300">
-      {/* File Upload */}
-      <input
-        type="file"
-        accept=".txt,.pdf"
-        onChange={handleFileUpload}
-        className="text-sm"
-      />
-
-      {/* Text Input */}
+    <div className="flex items-center gap-2 border border-neutral-200 bg-white rounded-full px-3 py-2 shadow-sm">
       <textarea
-        className="flex-1 p-2 border rounded resize-none"
+        className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400"
         rows={1}
-        placeholder="Type your message..."
+        placeholder="Type here..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
       />
 
-      {/* Send Button */}
       <button
         onClick={sendMessage}
-        className="px-3 py-2 bg-blue-500 text-white rounded"
+        className="w-9 h-9 flex items-center justify-center bg-sol-accent text-white rounded-full shadow-sm hover:bg-sol-accentHover transition-colors"
       >
         ➤
       </button>
