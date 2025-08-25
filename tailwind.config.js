@@ -6,7 +6,7 @@ module.exports = {
     colors: {
       sol: {
         background: "#FAF9F7", // warm neutral (main background)
-        bubble: "#Ffffff",    // assistant bubble
+        bubble: "#FAF9F7",    // assistant bubble
         accent: "#C88A65",    // clay accent (user bubble + send btn)
         accentHover: "#B27655",
         text: "#185a5f",      // deep neutral gray-green text
