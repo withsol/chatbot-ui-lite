@@ -34,3 +34,21 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 export default handler;
+
+import type { NextApiRequest, NextApiResponse } from "next";
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const { messages, model } = req.body;
+
+    // Sol's DNA system prompt
+
