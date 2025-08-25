@@ -10,6 +10,7 @@ import { ResetChat } from "./ResetChat";
 interface Props {
   messages: Message[];
   loading: boolean;
+  
   onSend: (message: Message) => const onSend = async (newMessage: Message) => {
   const updatedMessages = [...messages, newMessage];
 
