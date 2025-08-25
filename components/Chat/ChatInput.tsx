@@ -13,11 +13,6 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
 
   const sendMessage = () => {
     if (!message.trim() && !file) return;
-
-    if (file) {
-      console.log("Sending file:", file.name);
-    }
-
     handleSendMessage(message || `[File sent: ${file?.name}]`);
     setMessage("");
     setFile(null);
@@ -30,65 +25,54 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
     }
   };
 
-  // Auto-resize textarea as user types
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"; // reset height
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // set to content
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [message]);
 
   return (
-    <div className="flex flex-col gap-2 border border-neutral-200 bg-white rounded-xl px-3 py-2 shadow-sm">
-      {/* Animated file preview */}
-      {file && (
-        <div className="flex items-center gap-2 bg-sol-bubble text-sol-text px-2 py-1 rounded-md text-sm animate-fadeInUp">
-          ＋ {file.name}
-          <button
-            className="ml-auto text-sol-subtext hover:text-red-500 transition"
-            onClick={() => setFile(null)}
-          >
-            ❌
-          </button>
-        </div>
-      )}
-
-      <div className="flex items-end gap-2">
-        {/* File input (paperclip icon) */}
-        <label className="cursor-pointer text-lg text-sol-subtext hover:text-sol-accent transition">
-          ＋
+    <div className="flex items-end gap-2 px-2 py-2">
+      {/* Full rounded container */}
+      <div className="flex items-center flex-1 bg-white border border-neutral-200 rounded-full px-3 py-2 shadow-sm">
+        {/* + attachment button */}
+        <label className="cursor-pointer text-lg text-sol-subtext hover:text-sol-accent transition flex-shrink-0 mr-2">
+          +
           <input
             type="file"
             className="hidden"
             onChange={(e) => {
               const selected = e.target.files?.[0];
-              if (selected) {
-                setFile(selected);
-                console.log("Uploaded file:", selected.name);
-              }
+              if (selected) setFile(selected);
             }}
           />
         </label>
 
-        {/* Auto-growing textarea */}
+        {/* Message box (auto-grow textarea) */}
         <textarea
           ref={textareaRef}
-          className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 max-h-40 overflow-y-auto"
+          className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 text-base leading-snug max-h-40 overflow-y-auto"
           rows={1}
           placeholder="Type here..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-
-        {/* Send button */}
-        <button
-          onClick={sendMessage}
-          className="w-9 h-9 flex items-center justify-center bg-sol-accent text-white rounded-full shadow-sm hover:bg-sol-accentHover transition-colors"
-        >
-          ➤
-        </button>
       </div>
+
+      {/* Send button (active only when typing) */}
+      <button
+        onClick={sendMessage}
+        disabled={!message.trim() && !file}
+        className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors
+          ${message.trim() || file
+            ? "bg-sol-accent text-white hover:bg-sol-accentHover"
+            : "bg-neutral-200 text-neutral-400 cursor-default"}`}
+      >
+        ➤
+      </button>
     </div>
   );
 }
