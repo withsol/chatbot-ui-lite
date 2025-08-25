@@ -1,65 +1,84 @@
-import { Message } from "@/types";
-import { IconArrowUp } from "@tabler/icons-react";
-import { FC, KeyboardEvent, useEffect, useRef, useState } from "react";
+"use client";
 
-interface Props {
-  onSend: (message: Message) => void;
+import { useState } from "react";
+
+interface ChatInputProps {
+  handleSendMessage: (message: string) => void;
 }
 
-export const ChatInput: FC<Props> = ({ onSend }) => {
-  const [content, setContent] = useState<string>();
+export default function ChatInput({ handleSendMessage }: ChatInputProps) {
+  const [message, setMessage] = useState("");
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    if (value.length > 4000) {
-      alert("Message limit is 4000 characters");
-      return;
-    }
-
-    setContent(value);
+  const sendMessage = () => {
+    if (!message.trim()) return;
+    handleSendMessage(message);
+    setMessage("");
   };
 
-  const handleSend = () => {
-    if (!content) {
-      alert("Please enter a message");
-      return;
-    }
-    onSend({ role: "user", content });
-    setContent("");
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      sendMessage();
     }
   };
 
-  useEffect(() => {
-    if (textareaRef && textareaRef.current) {
-      textareaRef.current.style.height = "inherit";
-      textareaRef.current.style.height = `${textareaRef.current?.scrollHeight}px`;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type === "application/pdf") {
+      // Dynamically import pdfjs to avoid bloating initial bundle
+      const pdfjsLib = await import("pdfjs-dist/build/pdf");
+      const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.entry");
+      // @ts-ignore
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+      const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map((s: any) => s.str).join(" ") + "\n";
+      }
+
+      handleSendMessage(`File uploaded: ${file.name}\n\n${text}`);
+    } else {
+      // Default: treat as plain text
+      const text = await file.text();
+      handleSendMessage(`File uploaded: ${file.name}\n\n${text}`);
     }
-  }, [content]);
+
+    // Reset input so same file can be uploaded again if needed
+    e.target.value = "";
+  };
 
   return (
-    <div className="relative">
+    <div className="flex items-center gap-2 p-2 border-t border-gray-300">
+      {/* File Upload */}
+      <input
+        type="file"
+        accept=".txt,.pdf"
+        onChange={handleFileUpload}
+        className="text-sm"
+      />
+
+      {/* Text Input */}
       <textarea
-        ref={textareaRef}
-        className="min-h-[44px] rounded-lg pl-4 pr-12 py-2 w-full focus:outline-none focus:ring-1 focus:ring-neutral-300 border-2 border-neutral-200"
-        style={{ resize: "none" }}
-        placeholder="Type a message..."
-        value={content}
+        className="flex-1 p-2 border rounded resize-none"
         rows={1}
-        onChange={handleChange}
+        placeholder="Type your message..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
       />
 
-      <button onClick={() => handleSend()}>
-        <IconArrowUp className="absolute right-2 bottom-3 h-8 w-8 hover:cursor-pointer rounded-full p-1 bg-blue-500 text-white hover:opacity-80" />
+      {/* Send Button */}
+      <button
+        onClick={sendMessage}
+        className="px-3 py-2 bg-blue-500 text-white rounded"
+      >
+        ➤
       </button>
     </div>
   );
-};
+}
