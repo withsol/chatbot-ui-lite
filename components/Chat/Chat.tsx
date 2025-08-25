@@ -36,7 +36,7 @@ export const Chat: FC<Props> = ({ messages, loading, onSend, onReset }) => {
         )}
 
         <div className="mt-4 sm:mt-8 bottom-[56px] left-0 w-full">
-          <ChatInput handleSendMessage={onSend} />
+          <ChatInput handleSendMessage={(text: string) => onSend({ role: "user", content: text })} />
         </div>
       </div>
     </>
