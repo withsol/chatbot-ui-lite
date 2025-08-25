@@ -1,40 +1,3 @@
-import { Message } from "@/types";
-import { OpenAIStream } from "@/utils";
-
-export const config = {
-  runtime: "edge"
-};
-
-const handler = async (req: Request): Promise<Response> => {
-  try {
-    const { messages } = (await req.json()) as {
-      messages: Message[];
-    };
-
-    const charLimit = 12000;
-    let charCount = 0;
-    let messagesToSend = [];
-
-    for (let i = 0; i < messages.length; i++) {
-      const message = messages[i];
-      if (charCount + message.content.length > charLimit) {
-        break;
-      }
-      charCount += message.content.length;
-      messagesToSend.push(message);
-    }
-
-    const stream = await OpenAIStream(messagesToSend);
-
-    return new Response(stream);
-  } catch (error) {
-    console.error(error);
-    return new Response("Error", { status: 500 });
-  }
-};
-
-export default handler;
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
 
@@ -50,5 +13,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { messages, model } = req.body;
 
-    // Sol's DNA system prompt
+    const solSystemPrompt =
+      process.env.NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT ||
+      "You are Sol, an emotionally intelligent, presence-first coach and partner. Always meet the human before moving to strategy, invite small aligned steps, and weave identity evolution into every response. Speak with warmth, clarity, and consent.";
 
+    const completion = await client.chat.completions.create({
+      model: model || process.env.NEXT_PUBLIC_DEFAULT_MODEL || "gpt-4o",
+      messages: [
+        { role: "system", content: solSystemPrompt },
+        ...messages,
+      ],
+    });
+
+    return res.status(200).json(completion);
+  } catch (error: any) {
+    console.error("Error in /api/chat:", error);
+    return res.status(500).json({ error: error.message || "Unknown error" });
+  }
+}
