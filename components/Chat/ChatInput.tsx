@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface ChatInputProps {
   handleSendMessage: (message: string) => void;
@@ -9,6 +9,7 @@ interface ChatInputProps {
 export default function ChatInput({ handleSendMessage }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const sendMessage = () => {
     if (!message.trim() && !file) return;
@@ -29,12 +30,20 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
     }
   };
 
+  // Auto-resize textarea as user types
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"; // reset height
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // set to content
+    }
+  }, [message]);
+
   return (
     <div className="flex flex-col gap-2 border border-neutral-200 bg-white rounded-xl px-3 py-2 shadow-sm">
       {/* Animated file preview */}
       {file && (
         <div className="flex items-center gap-2 bg-sol-bubble text-sol-text px-2 py-1 rounded-md text-sm animate-fadeInUp">
-          📎 {file.name}
+          ＋ {file.name}
           <button
             className="ml-auto text-sol-subtext hover:text-red-500 transition"
             onClick={() => setFile(null)}
@@ -44,10 +53,10 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-end gap-2">
         {/* File input (paperclip icon) */}
         <label className="cursor-pointer text-lg text-sol-subtext hover:text-sol-accent transition">
-          📎
+          ＋
           <input
             type="file"
             className="hidden"
@@ -61,9 +70,10 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
           />
         </label>
 
-        {/* Textarea */}
+        {/* Auto-growing textarea */}
         <textarea
-          className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400"
+          ref={textareaRef}
+          className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 max-h-40 overflow-y-auto"
           rows={1}
           placeholder="Type here..."
           value={message}
