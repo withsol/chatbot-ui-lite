@@ -80,7 +80,7 @@ export default function Home() {
     setMessages([
       {
         role: "assistant",
-        content: `Hi there! Sol Here 👋 I'm here to help you take aligned-to-you next steps in your life and business. What's coming up for you today?`
+        content: `Hi there, I'm Sol 👋 I'm here to walk with you as you step into your Future Self by taking aligned-to-you next steps in your life and business. What's coming up for you today?`
       }
     ]);
   };
@@ -93,7 +93,7 @@ export default function Home() {
     setMessages([
       {
         role: "assistant",
-        content: `Hi there! Sol Here 👋 I'm here to help you take aligned-to-you next steps in your life and business. What's coming up for you today?`
+        content: `Hi there, I'm Sol 👋 I'm here to walk with you as you step into your Future Self by taking aligned-to-you next steps in your life and business. What's coming up for you today?`
       }
     ]);
   }, []);
