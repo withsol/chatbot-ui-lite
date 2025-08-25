@@ -1,137 +1,43 @@
-import { Chat } from "@/components/Chat/Chat";
-import { Footer } from "@/components/Layout/Footer";
-import { Navbar } from "@/components/Layout/Navbar";
+import { useState } from "react";
+import { Chat } from "../components/Chat/Chat";
 import { Message } from "@/types";
-import Head from "next/head";
-import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  // Start with Sol's greeting
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Hi there, Sol here 👋 I'm here to support you in taking aligned-to-you next steps in your life and business. What's coming up for you today?",
+    },
+  ]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleSend = async (message: Message) => {
-    const updatedMessages = [...messages, message];
-
-    setMessages(updatedMessages);
-    setLoading(true);
-
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        messages: updatedMessages
-      })
-    });
-
-    if (!response.ok) {
-      setLoading(false);
-      throw new Error(response.statusText);
-    }
-
-    const data = response.body;
-
-    if (!data) {
-      return;
-    }
-
-    setLoading(false);
-
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-    let done = false;
-    let isFirst = true;
-
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      const chunkValue = decoder.decode(value);
-
-      if (isFirst) {
-        isFirst = false;
-        setMessages((messages) => [
-          ...messages,
-          {
-            role: "assistant",
-            content: chunkValue
-          }
-        ]);
-      } else {
-        setMessages((messages) => {
-          const lastMessage = messages[messages.length - 1];
-          const updatedMessage = {
-            ...lastMessage,
-            content: lastMessage.content + chunkValue
-          };
-          return [...messages.slice(0, -1), updatedMessage];
-        });
-      }
-    }
+  const handleSend = (message: Message) => {
+    setMessages((prev) => [...prev, message]);
   };
 
   const handleReset = () => {
+    // Reset conversation and show Sol's greeting again
     setMessages([
       {
         role: "assistant",
-        content: `Hi there, I'm Sol 👋 I'm here to walk with you as you step into your Future Self by taking aligned-to-you next steps in your life and business. What's coming up for you today?`
-      }
+        content:
+          "Hi there, Sol here 👋 I'm here to support you in taking aligned-to-you next steps in your life and business. What's coming up for you today?",
+      },
     ]);
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    setMessages([
-      {
-        role: "assistant",
-        content: `Hi there, I'm Sol 👋 I'm here to walk with you as you step into your Future Self by taking aligned-to-you next steps in your life and business. What's coming up for you today?`
-      }
-    ]);
-  }, []);
-
   return (
-    <>
-      <Head>
-        <title>Chatbot UI</title>
-        <meta
-          name="description"
-          content="A simple chatbot starter kit for OpenAI's chat model using Next.js, TypeScript, and Tailwind CSS."
-        />
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1"
-        />
-        <link
-          rel="icon"
-          href="/favicon.ico"
-        />
-      </Head>
-
-      <div className="flex flex-col h-screen">
-        <Navbar />
-
-        <div className="flex-1 overflow-auto sm:px-10 pb-4 sm:pb-10">
-          <div className="max-w-[800px] mx-auto mt-4 sm:mt-12">
-            <Chat
-              messages={messages}
-              loading={loading}
-              onSend={handleSend}
-              onReset={handleReset}
-            />
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-        <Footer />
-      </div>
-    </>
+    <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">Sol</h1>
+      <Chat
+        messages={messages}
+        loading={loading}
+        onSend={handleSend}
+        onReset={handleReset}
+      />
+    </div>
   );
 }
