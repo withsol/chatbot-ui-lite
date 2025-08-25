@@ -28,10 +28,7 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
 
     if (file.type === "application/pdf") {
       // Dynamically import pdfjs to avoid bloating initial bundle
-      const pdfjsLib = await import("pdfjs-dist/build/pdf");
-      const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.entry");
-      // @ts-ignore
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+     const pdfjsLib = await import("pdfjs-dist");
 
       const pdf = await pdfjsLib.getDocument(await file.arrayBuffer()).promise;
       let text = "";
