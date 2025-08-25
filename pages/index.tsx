@@ -3,7 +3,6 @@ import { Chat } from "../components/Chat/Chat";
 import { Message } from "../types";
 
 export default function Home() {
-  // Start with Sol's greeting
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -19,13 +18,16 @@ export default function Home() {
   };
 
   return (
-    <div className="p-4">
-      <Chat
-        messages={messages}
-        loading={loading}
-        onSend={handleSend}
-        onReset={() => setMessages([])} // still required by Chat.tsx but hidden in UI
-      />
+    <div className="min-h-screen bg-sol-background flex items-center justify-center px-4">
+      {/* Contained chat box */}
+      <div className="w-full max-w-3xl">
+        <Chat
+          messages={messages}
+          loading={loading}
+          onSend={handleSend}
+          onReset={() => setMessages([])}
+        />
+      </div>
     </div>
   );
 }
