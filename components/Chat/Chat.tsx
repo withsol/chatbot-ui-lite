@@ -1,6 +1,6 @@
 import { Message } from "@/types";
 import { FC } from "react";
-import { ChatInput } from "./ChatInput";
+import ChatInput from "./ChatInput";
 import { ChatLoader } from "./ChatLoader";
 import { ChatMessage } from "./ChatMessage";
 import { ResetChat } from "./ResetChat";
@@ -36,7 +36,7 @@ export const Chat: FC<Props> = ({ messages, loading, onSend, onReset }) => {
         )}
 
         <div className="mt-4 sm:mt-8 bottom-[56px] left-0 w-full">
-          <ChatInput onSend={onSend} />
+          <ChatInput handleSendMessage={onSend} />
         </div>
       </div>
     </>
