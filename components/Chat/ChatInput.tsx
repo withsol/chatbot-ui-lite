@@ -9,12 +9,12 @@ interface ChatInputProps {
 export default function ChatInput({ handleSendMessage }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const sendMessage = () => {
     if (!message.trim() && files.length === 0) return;
 
-    // For now, just log files
     if (files.length > 0) {
       files.forEach((file) => {
         console.log("Sending file:", file.name);
@@ -44,6 +44,16 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [message]);
+
+  // Handle dropped files
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      setFiles((prev) => [...prev, ...droppedFiles]);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2 px-2 py-2">
@@ -91,8 +101,17 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
         </div>
       )}
 
-      {/* Input bubble */}
-      <div className="flex items-center flex-1 bg-white border border-neutral-200 rounded-full px-3 py-2 shadow-sm">
+      {/* Input bubble with drag-and-drop */}
+      <div
+        className={`flex items-center flex-1 border rounded-full px-3 py-2 shadow-sm bg-white border-neutral-200 transition
+          ${isDragging ? "border-sol-accent bg-sol-bubble" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+      >
         {/* + button */}
         <label className="cursor-pointer text-xl text-sol-accent hover:opacity-80 transition mr-3 flex-shrink-0">
           +
@@ -113,7 +132,7 @@ export default function ChatInput({ handleSendMessage }: ChatInputProps) {
           ref={textareaRef}
           className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 text-base leading-snug max-h-40 overflow-y-auto"
           rows={1}
-          placeholder="Type here..."
+          placeholder={isDragging ? "Drop files here…" : "Type here..."}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
