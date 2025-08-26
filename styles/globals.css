@@ -38,10 +38,10 @@
 
 /* Typography for chat */
 .prose {
-  font-family: 'Georgia', serif; /* swap for your chosen font */
+  font-family: 'monteserrat', Arial, Helvetica, sans-serif; /* swap for your chosen font */
 }
 .prose strong {
-  color: #2D2D2D;
+  color: #547f84;
 }
 .prose h1, .prose h2, .prose h3 {
   color: #2D2D2D;
