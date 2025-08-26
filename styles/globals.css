@@ -47,3 +47,31 @@
   color: #2D2D2D;
   font-weight: 600;
 }
+
+@keyframes solPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.animate-solPulse {
+  animation: solPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes progressLoad {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-progressLoad {
+  animation: progressLoad 2s ease-out forwards;
+}
