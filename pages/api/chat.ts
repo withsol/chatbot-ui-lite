@@ -1,134 +1,50 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { OpenAIStream, StreamingTextResponse } from "ai";
-import { Message } from "ai/react";
-import formidable, { Fields, Files } from "formidable";
+import { NextApiRequest, NextApiResponse } from "next";
+import { OpenAI } from "openai";
+import formidable from "formidable";
+import { logToAirtable } from "@/utils/logToAirtable";
 import fs from "fs";
-import Airtable from "airtable";
 
 export const config = {
   api: {
-    bodyParser: false, // Required for file uploads
+    bodyParser: false,
   },
 };
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID!
-);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  const form = formidable({ multiples: false });
 
-  const form = formidable({ keepExtensions: true });
-
-  form.parse(req, async (err: any, fields: Fields, files: Files) => {
+  form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error("Form parsing error:", err);
-      return res.status(500).json({ error: "Form parse error" });
+      return res.status(400).json({ error: "Failed to parse form data." });
     }
 
     try {
-      // ✅ Safely extract fields
-      const email = Array.isArray(fields.email) ? fields.email[0] : fields.email;
-      const model = Array.isArray(fields.model) ? fields.model[0] : fields.model;
-      const rawMessages = Array.isArray(fields.messages) ? fields.messages[0] : fields.messages;
-      const messages = JSON.parse(rawMessages || "[]") as Message[];
+      const userMessage = fields.message?.toString() || "";
+      const email = fields.email?.toString() || "";
+      const file = files?.file?.[0];
 
-      if (!email) {
-        return res.status(400).json({ error: "Missing email." });
-      }
-
-      // ✅ Validate email exists in Users table
-      const matchingUsers = await base("Users")
-        .select({
-          filterByFormula: `{Email} = '${email}'`,
-          maxRecords: 1,
-        })
-        .firstPage();
-
-      if (matchingUsers.length === 0) {
-        return res.status(403).json({ error: "Unrecognized email address." });
-      }
-
-      const userId = matchingUsers[0].id;
-
-      // ✅ Log user message
-      const userMessage = messages[messages.length - 1]?.content || "";
-      if (userMessage) {
-        base("Messages")
-          .create([
-            {
-              fields: {
-                "Message Text": userMessage,
-                "Role": "user",
-                "Email": [userId],
-                "Timestamp": new Date().toISOString(),
-              },
-            },
-          ])
-          .catch((err) => console.error("Airtable log error (user):", err));
-      }
-
-      // ✅ Log file metadata if uploaded
-      const uploadedFile = files.file?.[0];
-      if (uploadedFile) {
-        console.log(`Uploaded file received: ${uploadedFile.originalFilename}`);
-        base("Messages")
-          .create([
-            {
-              fields: {
-                "Message Text": `📎 File uploaded: ${uploadedFile.originalFilename}`,
-                "Role": "user",
-                "Email": [userId],
-                "Timestamp": new Date().toISOString(),
-              },
-            },
-          ])
-          .catch((err) => console.error("Airtable log error (file):", err));
-      }
-
-      // ✅ Send to OpenAI
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: model || "gpt-4o",
-          messages,
-          stream: true,
-        }),
+      // Send user message to OpenAI
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: userMessage }],
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        return res.status(500).json({ error });
-      }
+      const solReply = completion.choices?.[0]?.message?.content || "";
 
-      // ✅ Log Sol reply after it streams
-      const stream = OpenAIStream(response, {
-        onCompletion: async (solReply: string) => {
-          base("Messages")
-            .create([
-              {
-                fields: {
-                  "Message Text": solReply,
-                  "Role": "sol",
-                  "Email": [userId],
-                  "Timestamp": new Date().toISOString(),
-                },
-              },
-            ])
-            .catch((err) => console.error("Airtable log error (sol):", err));
-        },
-      });
+      // Log both messages to Airtable
+      await logToAirtable({ email, role: "user", messageText: userMessage });
+      await logToAirtable({ email, role: "sol", messageText: solReply });
 
-      return new StreamingTextResponse(stream);
-    } catch (error: any) {
+      // Return reply
+      res.status(200).json({ reply: solReply });
+    } catch (error) {
       console.error("Unexpected error:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 }
