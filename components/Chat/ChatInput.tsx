@@ -1,161 +1,68 @@
-"use client";
+import React, { useState, useEffect } from "react";
 
-import { useState, useRef, useEffect } from "react";
+const ChatInput = ({ onSendMessage }: { onSendMessage: (message: string, email: string) => void }) => {
+  const [inputValue, setInputValue] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("solEmail") || "");
 
-interface ChatInputProps {
-  handleSendMessage: (message: string) => void;
-}
-
-export default function ChatInput({ handleSendMessage }: ChatInputProps) {
-  const [message, setMessage] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const sendMessage = () => {
-    if (!message.trim() && files.length === 0) return;
-
-    if (files.length > 0) {
-      files.forEach((file) => {
-        console.log("Sending file:", file.name);
-      });
+  const handleSend = () => {
+    if (!email) {
+      alert("Please enter your email before chatting with Sol.");
+      return;
     }
 
-    handleSendMessage(
-      message ||
-        `[Files sent: ${files.map((f) => f.name).join(", ")}]`
-    );
-
-    setMessage("");
-    setFiles([]);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+    if (inputValue.trim() !== "") {
+      onSendMessage(inputValue, email); // <-- pass the email along with the message
+      setInputValue("");
     }
   };
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [message]);
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSend();
+  };
 
-  // Handle dropped files
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length > 0) {
-      setFiles((prev) => [...prev, ...droppedFiles]);
+  const handleSaveEmail = () => {
+    if (!email.includes("@")) {
+      alert("Please enter a valid email.");
+      return;
     }
+    localStorage.setItem("solEmail", email);
+    alert("Email saved! You're ready to chat.");
   };
 
   return (
-    <div className="flex flex-col gap-2 px-2 py-2">
-      {/* File previews above input */}
-      {files.length > 0 && (
-  <div className="flex flex-col gap-2">
-    {files.map((file, index) => (
-      <div
-        key={index}
-        className="flex items-center gap-2 bg-neutral-100 border border-neutral-200 px-3 py-2 rounded-lg shadow-sm relative"
-      >
-        {/* Thumbnail if image */}
-        {file.type.startsWith("image/") ? (
-          <img
-            src={URL.createObjectURL(file)}
-            alt={file.name}
-            className="h-10 w-10 object-cover rounded"
-          />
-        ) : file.type.startsWith("audio/") ? (
-          <audio
-            controls
-            src={URL.createObjectURL(file)}
-            className="h-8"
-          />
-        ) : (
-          <span className="text-lg">📎</span>
-        )}
+    <div style={{ padding: "1rem", borderTop: "1px solid #ccc" }}>
+      <div style={{ marginBottom: "1rem" }}>
+  <p style={{ marginBottom: "0.5rem" }}>Your email:</p>
+  <input
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    placeholder="you@example.com"
+    style={{ padding: "0.5rem", width: "250px", marginRight: "0.5rem" }}
+  />
+  <button onClick={handleSaveEmail}>Save</button>
+  <button
+    onClick={() => {
+      localStorage.removeItem("solEmail");
+      setEmail("");
+    }}
+    style={{ marginLeft: "0.5rem" }}
+  >
+    Clear
+  </button>
+</div>
 
-        {/* File name */}
-        <span className="text-sm text-sol-text truncate max-w-[200px]">
-          {file.name}
-        </span>
-
-        {/* Remove button */}
-        <button
-          onClick={() =>
-            setFiles(files.filter((_, i) => i !== index))
-          }
-          className="ml-auto text-red-500 hover:text-red-700 text-xs"
-        >
-          ✕
-        </button>
-
-        {/* Fake progress bar while sending */}
-        <div className="absolute bottom-0 left-0 h-1 bg-sol-accent/40 w-full">
-          <div className="h-1 bg-sol-accent animate-progressLoad"></div>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-
-
-      {/* Input bubble with drag-and-drop */}
-      <div
-        className={`flex items-center flex-1 border rounded-full px-3 py-2 shadow-sm bg-white border-neutral-200 transition
-          ${isDragging ? "border-sol-accent bg-sol-bubble" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-      >
-        {/* + button */}
-        <label className="cursor-pointer text-xl text-sol-accent hover:opacity-80 transition mr-3 flex-shrink-0">
-          +
-          <input
-            type="file"
-            className="hidden"
-            multiple
-            accept="image/*,audio/*,.pdf,.doc,.docx,.txt"
-            onChange={(e) => {
-              const selected = Array.from(e.target.files || []);
-              setFiles((prev) => [...prev, ...selected]);
-            }}
-          />
-        </label>
-
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
-          className="flex-1 bg-transparent outline-none resize-none text-sol-text placeholder-gray-400 text-base leading-snug max-h-40 overflow-y-auto"
-          rows={1}
-          placeholder={isDragging ? "Drop files here…" : "Type here..."}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-
-        {/* Send button */}
-        <button
-          onClick={sendMessage}
-          disabled={!message.trim() && files.length === 0}
-          className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors duration-200 ml-2
-            ${message.trim() || files.length > 0
-              ? "bg-sol-accent text-white hover:bg-sol-accentHover"
-              : "bg-neutral-200 text-neutral-400 cursor-default"}`}
-        >
-          ↑
-        </button>
-      </div>
+      <input
+        type="text"
+        placeholder="Type your message to Sol..."
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyPress={handleKeyPress}
+        style={{ padding: "0.5rem", width: "75%", marginRight: "0.5rem" }}
+      />
+      <button onClick={handleSend}>Send</button>
     </div>
   );
-}
+};
+
+export default ChatInput;

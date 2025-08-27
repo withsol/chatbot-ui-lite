@@ -13,6 +13,7 @@ interface Props {
 
 export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+  const [email, setEmail] = useState<string>(""); // NEW
 
   const handleSend = async (newMessage: Message) => {
     const updatedMessages = [...localMessages, newMessage];
@@ -24,6 +25,7 @@ export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
       body: JSON.stringify({
         messages: updatedMessages,
         model: process.env.NEXT_PUBLIC_DEFAULT_MODEL || "gpt-4o",
+        email: email || "unknown", // <- Add email here
       }),
     });
 
@@ -59,10 +61,11 @@ export const Chat: FC<Props> = ({ messages, loading, onSend }) => {
       {/* Input bar */}
       <div className="mt-4 sm:mt-8 bottom-[56px] left-0 w-full">
         <ChatInput
-          handleSendMessage={(text: string) =>
-            handleSend({ role: "user", content: text })
-          }
-        />
+  onSendMessage={(text: string, enteredEmail: string) => {
+    setEmail(enteredEmail);
+    handleSend({ role: "user", content: text });
+  }}
+/>
       </div>
     </div>
   );
