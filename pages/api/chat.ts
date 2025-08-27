@@ -35,22 +35,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const solReply = completion.choices[0].message?.content || "";
     const userMessage = messages[messages.length - 1]?.content || "";
 
-    // --- Airtable Logging (non-blocking) ---
+    // --- Airtable Logging: ONLY Message Text ---
     if (userMessage) {
       base("Messages")
         .create([
           {
             fields: {
-              "Message ID": `msg_${Date.now()}`,
-              "Users": "user_001", // ⚠️ if this is a linked field, replace with Airtable record ID
-              "Role": "user",
               "Message Text": userMessage,
-              "Timestamp": new Date().toISOString(),
-              "Phase": "Expansion",
             },
           },
         ])
-        .catch((err) => console.error("Airtable user log error:", err));
+        .catch((err) => console.error("Airtable log error (user):", err));
     }
 
     if (solReply) {
@@ -58,18 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .create([
           {
             fields: {
-              "Message ID": `msg_${Date.now() + 1}`,
-              "Users": "sol",
-              "Role": "sol",
               "Message Text": solReply,
-              "Timestamp": new Date().toISOString(),
-              "Phase": "Expansion",
             },
           },
         ])
-        .catch((err) => console.error("Airtable sol log error:", err));
+        .catch((err) => console.error("Airtable log error (sol):", err));
     }
-    // --- End Logging ---
+    // --- End Test Logger ---
 
     return res.status(200).json(completion);
   } catch (error: any) {
