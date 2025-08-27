@@ -40,9 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error(err);
       res.status(500).json({ success: false, error: err.message });
     }
-  }
-
-  if (req.method === "GET") {
+  } else if (req.method === "GET") {
     try {
       const records = await base("Aligned Business Method")
         .select({ maxRecords: 20, sort: [{ field: "Name of Lesson", direction: "asc" }] })
@@ -51,3 +49,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(200).json(records.map((r) => r.fields));
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
+    }
+  } else {
+    res.setHeader("Allow", ["GET", "POST"]);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
