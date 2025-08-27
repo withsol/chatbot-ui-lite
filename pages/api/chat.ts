@@ -35,13 +35,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const solReply = completion.choices[0].message?.content || "";
     const userMessage = messages[messages.length - 1]?.content || "";
 
-    // --- Airtable Logging: ONLY Message Text ---
+    // --- Airtable Logging (Message Text + Role + Timestamp) ---
     if (userMessage) {
       base("Messages")
         .create([
           {
             fields: {
               "Message Text": userMessage,
+              "Role": "user",
+              "Timestamp": new Date().toISOString(),
             },
           },
         ])
@@ -54,12 +56,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           {
             fields: {
               "Message Text": solReply,
+              "Role": "sol",
+              "Timestamp": new Date().toISOString(),
             },
           },
         ])
         .catch((err) => console.error("Airtable log error (sol):", err));
     }
-    // --- End Test Logger ---
+    // --- End Logging ---
 
     return res.status(200).json(completion);
   } catch (error: any) {
