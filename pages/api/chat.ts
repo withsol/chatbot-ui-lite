@@ -1,98 +1,134 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
+import { OpenAIStream, StreamingTextResponse } from "ai";
+import { Message } from "ai/react";
+import formidable, { Fields, Files } from "formidable";
+import fs from "fs";
 import Airtable from "airtable";
 
-// OpenAI Client
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+export const config = {
+  api: {
+    bodyParser: false, // Required for file uploads
+  },
+};
 
-// Airtable Client
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-  .base(process.env.AIRTABLE_BASE_ID as string);
-
-// Helper: Check if email exists in Airtable "Users" table
-async function isEmailValid(email: string): Promise<boolean> {
-  const records = await base("Users")
-    .select({
-      filterByFormula: `{Email} = '${email}'`,
-      maxRecords: 1,
-    })
-    .firstPage();
-
-  return records.length > 0;
-}
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_BASE_ID!
+);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  try {
-    const { messages, model, email } = req.body;
+  const form = formidable({ keepExtensions: true });
 
-    if (!email || typeof email !== "string") {
-      return res.status(400).json({ error: "Missing or invalid email." });
+  form.parse(req, async (err: any, fields: Fields, files: Files) => {
+    if (err) {
+      console.error("Form parsing error:", err);
+      return res.status(500).json({ error: "Form parse error" });
     }
 
-    const emailIsValid = await isEmailValid(email);
-    if (!emailIsValid) {
-      return res.status(403).json({ error: "Unrecognized email address." });
-    }
+    try {
+      // ✅ Safely extract fields
+      const email = Array.isArray(fields.email) ? fields.email[0] : fields.email;
+      const model = Array.isArray(fields.model) ? fields.model[0] : fields.model;
+      const rawMessages = Array.isArray(fields.messages) ? fields.messages[0] : fields.messages;
+      const messages = JSON.parse(rawMessages || "[]") as Message[];
 
-    const solSystemPrompt =
-      process.env.NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT ||
-      "You are Sol, an emotionally intelligent, presence-first coach and partner...";
+      if (!email) {
+        return res.status(400).json({ error: "Missing email." });
+      }
 
-    const messagesWithSystem = [
-      { role: "system", content: solSystemPrompt },
-      ...messages,
-    ];
+      // ✅ Validate email exists in Users table
+      const matchingUsers = await base("Users")
+        .select({
+          filterByFormula: `{Email} = '${email}'`,
+          maxRecords: 1,
+        })
+        .firstPage();
 
-    // OpenAI Chat Completion
-    const completion = await client.chat.completions.create({
-      model: model || process.env.NEXT_PUBLIC_DEFAULT_MODEL || "gpt-4o",
-      messages: messagesWithSystem,
-    });
+      if (matchingUsers.length === 0) {
+        return res.status(403).json({ error: "Unrecognized email address." });
+      }
 
-    const solReply = completion.choices[0].message?.content || "";
-    const userMessage = messages[messages.length - 1]?.content || "";
+      const userId = matchingUsers[0].id;
 
-    // Log USER message to Airtable
-    if (userMessage) {
-      base("Messages")
-        .create([
-          {
-            fields: {
-              "Message Text": userMessage,
-              "Role": "user",
-              "Email": [email],
-              "Timestamp": new Date().toISOString(),
+      // ✅ Log user message
+      const userMessage = messages[messages.length - 1]?.content || "";
+      if (userMessage) {
+        base("Messages")
+          .create([
+            {
+              fields: {
+                "Message Text": userMessage,
+                "Role": "user",
+                "Email": [userId],
+                "Timestamp": new Date().toISOString(),
+              },
             },
-          },
-        ])
-        .catch((err) => console.error("Airtable log error (user):", err));
-    }
+          ])
+          .catch((err) => console.error("Airtable log error (user):", err));
+      }
 
-    // Log SOL reply to Airtable
-    if (solReply) {
-      base("Messages")
-        .create([
-          {
-            fields: {
-              "Message Text": solReply,
-              "Role": "sol",
-              "Email": [email],
-              "Timestamp": new Date().toISOString(),
+      // ✅ Log file metadata if uploaded
+      const uploadedFile = files.file?.[0];
+      if (uploadedFile) {
+        console.log(`Uploaded file received: ${uploadedFile.originalFilename}`);
+        base("Messages")
+          .create([
+            {
+              fields: {
+                "Message Text": `📎 File uploaded: ${uploadedFile.originalFilename}`,
+                "Role": "user",
+                "Email": [userId],
+                "Timestamp": new Date().toISOString(),
+              },
             },
-          },
-        ])
-        .catch((err) => console.error("Airtable log error (sol):", err));
-    }
+          ])
+          .catch((err) => console.error("Airtable log error (file):", err));
+      }
 
-    return res.status(200).json(completion);
-  } catch (error: any) {
-    console.error("Error in /api/chat:", error);
-    return res.status(500).json({ error: error.message || "Unknown error" });
-  }
+      // ✅ Send to OpenAI
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: model || "gpt-4o",
+          messages,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return res.status(500).json({ error });
+      }
+
+      // ✅ Log Sol reply after it streams
+      const stream = OpenAIStream(response, {
+        onCompletion: async (solReply: string) => {
+          base("Messages")
+            .create([
+              {
+                fields: {
+                  "Message Text": solReply,
+                  "Role": "sol",
+                  "Email": [userId],
+                  "Timestamp": new Date().toISOString(),
+                },
+              },
+            ])
+            .catch((err) => console.error("Airtable log error (sol):", err));
+        },
+      });
+
+      return new StreamingTextResponse(stream);
+    } catch (error: any) {
+      console.error("Unexpected error:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }

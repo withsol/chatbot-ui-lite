@@ -1,28 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 
-const ChatInput = ({
-  onSendMessage,
-}: {
-  onSendMessage: (message: string, email: string) => void;
-}) => {
+type Props = {
+  onSendMessage: (message: string, email: string, file?: File | null) => void;
+};
+
+const ChatInput: React.FC<Props> = ({ onSendMessage }) => {
   const [inputValue, setInputValue] = useState("");
   const [email, setEmail] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
-  // ✅ Avoid SSR build error: Only access localStorage in useEffect
   useEffect(() => {
     const storedEmail = localStorage.getItem("solEmail");
     if (storedEmail) setEmail(storedEmail);
   }, []);
 
   const handleSend = () => {
-    if (!email) {
-      alert("Please enter your email before chatting with Sol.");
+    if (!email || !email.includes("@")) {
+      alert("Please enter a valid email before chatting with Sol.");
       return;
     }
 
-    if (inputValue.trim() !== "") {
-      onSendMessage(inputValue, email); // <-- pass the email along with the message
+    if (inputValue.trim() !== "" || file) {
+      onSendMessage(inputValue.trim(), email, file);
       setInputValue("");
+      setFile(null);
     }
   };
 
@@ -30,47 +31,67 @@ const ChatInput = ({
     if (e.key === "Enter") handleSend();
   };
 
-  const handleSaveEmail = () => {
-    if (!email.includes("@")) {
-      alert("Please enter a valid email.");
-      return;
-    }
-    localStorage.setItem("solEmail", email);
-    alert("Email saved! You're ready to chat.");
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
   };
 
   return (
-    <div style={{ padding: "1rem", borderTop: "1px solid #ccc" }}>
-      <div style={{ marginBottom: "1rem" }}>
-        <p style={{ marginBottom: "0.5rem" }}>Your email:</p>
+    <div className="w-full border-t border-neutral-300 px-2 py-4 sm:px-4">
+      {/* Email row */}
+      <div className="mb-4 flex items-center space-x-2">
+        <label className="text-sm font-medium">Your email:</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          style={{ padding: "0.5rem", width: "250px", marginRight: "0.5rem" }}
+          className="w-64 rounded border px-2 py-1"
         />
-        <button onClick={handleSaveEmail}>Save</button>
+        <button
+          onClick={() => {
+            if (!email.includes("@")) return alert("Invalid email");
+            localStorage.setItem("solEmail", email);
+            alert("Email saved! ✅");
+          }}
+          className="rounded bg-blue-500 px-3 py-1 text-white"
+        >
+          Save
+        </button>
         <button
           onClick={() => {
             localStorage.removeItem("solEmail");
             setEmail("");
           }}
-          style={{ marginLeft: "0.5rem" }}
+          className="rounded bg-gray-300 px-3 py-1 text-sm"
         >
           Clear
         </button>
       </div>
 
-      <input
-        type="text"
-        placeholder="Type your message to Sol..."
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyPress={handleKeyPress}
-        style={{ padding: "0.5rem", width: "75%", marginRight: "0.5rem" }}
-      />
-      <button onClick={handleSend}>Send</button>
+      {/* File upload */}
+      <div className="mb-4">
+        <input type="file" onChange={handleFileChange} className="text-sm" />
+        {file && <p className="mt-2 text-sm text-gray-600">Selected: {file.name}</p>}
+      </div>
+
+      {/* Message + Send button */}
+      <div className="flex flex-row items-center gap-2">
+        <input
+          type="text"
+          placeholder="Type your message to Sol..."
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="flex-grow rounded border px-3 py-2"
+        />
+        <button
+          onClick={handleSend}
+          className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 };
