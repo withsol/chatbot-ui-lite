@@ -5,12 +5,12 @@ module.exports = {
   extend: {
     colors: {
       sol: {
-        background: "#FAF9F7", // warm neutral (main background)
-        bubble: "#f9f7faff",    // assistant bubble
-        accent: "#e9c8f4ff",    // lavender accent (user bubble + send btn)
-        accentHover: "#B27655",
-        text: "#185a5f",      // deep neutral gray-green text
-        subtext: "#4f7f81ff",   // muted gray-green labels
+        background: "#fffaffff", // warm neutral (main background)
+        bubble: "#fffaffff",    // assistant bubble
+        accent: "#eadaf0ff",    // lavender accent (user bubble + send btn)
+        accentHover: "#bb9368ff",
+        text: "#4c5d5fff",      // deep neutral gray-green text
+        subtext: "#728c8fff",   // muted gray-green labels
       },
     },
   },
