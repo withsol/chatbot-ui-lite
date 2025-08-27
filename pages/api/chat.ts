@@ -17,12 +17,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { messages, model } = req.body;
 
-    // Sol's DNA system prompt
     const solSystemPrompt =
       process.env.NEXT_PUBLIC_DEFAULT_SYSTEM_PROMPT ||
-      "You are Sol, an emotionally intelligent, presence-first coach and partner. Always meet the human before moving to strategy, invite small aligned steps, and weave identity evolution into every response. Speak with warmth, clarity, and consent. You hold the bigness of their dreams and the next level of their life and business with them, so they don’t have to carry it alone.";
+      "You are Sol, an emotionally intelligent, presence-first coach and partner...";
 
-    // Prepend Sol's DNA prompt before user messages
     const messagesWithSystem = [
       { role: "system", content: solSystemPrompt },
       ...messages,
@@ -35,41 +33,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const solReply = completion.choices[0].message?.content || "";
-
-    // --- Airtable Logging ---
-    // Last user message
     const userMessage = messages[messages.length - 1]?.content || "";
 
+    // --- Airtable Logging (non-blocking) ---
     if (userMessage) {
-      await base("Messages").create([
-        {
-          fields: {
-            "Message ID": `msg_${Date.now()}`,
-            "Users": "user_001", // TODO: replace with actual user id
-            "Role": "user",
-            "Message Text": userMessage,
-            "Timestamp": new Date().toISOString(),
-            "Phase": "Expansion", // optional default
+      base("Messages")
+        .create([
+          {
+            fields: {
+              "Message ID": `msg_${Date.now()}`,
+              "Users": "user_001", // ⚠️ if this is a linked field, replace with Airtable record ID
+              "Role": "user",
+              "Message Text": userMessage,
+              "Timestamp": new Date().toISOString(),
+              "Phase": "Expansion",
+            },
           },
-        },
-      ]);
+        ])
+        .catch((err) => console.error("Airtable user log error:", err));
     }
 
     if (solReply) {
-      await base("Messages").create([
-        {
-          fields: {
-            "Message ID": `msg_${Date.now() + 1}`,
-            "Users": "sol",
-            "Role": "sol",
-            "Message Text": solReply,
-            "Timestamp": new Date().toISOString(),
-            "Phase": "Expansion", // optional default
+      base("Messages")
+        .create([
+          {
+            fields: {
+              "Message ID": `msg_${Date.now() + 1}`,
+              "Users": "sol",
+              "Role": "sol",
+              "Message Text": solReply,
+              "Timestamp": new Date().toISOString(),
+              "Phase": "Expansion",
+            },
           },
-        },
-      ]);
+        ])
+        .catch((err) => console.error("Airtable sol log error:", err));
     }
-    // --- End Airtable Logging ---
+    // --- End Logging ---
 
     return res.status(200).json(completion);
   } catch (error: any) {
