@@ -1,9 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import OpenAI from "openai";
+import Airtable from "airtable";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
+  .base(process.env.AIRTABLE_BASE_ID as string);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -24,10 +28,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...messages,
     ];
 
+    // Call OpenAI
     const completion = await client.chat.completions.create({
       model: model || process.env.NEXT_PUBLIC_DEFAULT_MODEL || "gpt-4o",
       messages: messagesWithSystem,
     });
+
+    const solReply = completion.choices[0].message?.content || "";
+
+    // --- Airtable Logging ---
+    // Last user message
+    const userMessage = messages[messages.length - 1]?.content || "";
+
+    if (userMessage) {
+      await base("Messages").create([
+        {
+          fields: {
+            "Message ID": `msg_${Date.now()}`,
+            "Users": "user_001", // TODO: replace with actual user id
+            "Role": "user",
+            "Message Text": userMessage,
+            "Timestamp": new Date().toISOString(),
+            "Phase": "Expansion", // optional default
+          },
+        },
+      ]);
+    }
+
+    if (solReply) {
+      await base("Messages").create([
+        {
+          fields: {
+            "Message ID": `msg_${Date.now() + 1}`,
+            "Users": "sol",
+            "Role": "sol",
+            "Message Text": solReply,
+            "Timestamp": new Date().toISOString(),
+            "Phase": "Expansion", // optional default
+          },
+        },
+      ]);
+    }
+    // --- End Airtable Logging ---
 
     return res.status(200).json(completion);
   } catch (error: any) {
