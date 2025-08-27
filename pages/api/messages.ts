@@ -6,17 +6,21 @@ const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
+    console.log("Base ID:", process.env.AIRTABLE_BASE_ID);
+    
     try {
-      const { user_id, role, content, tags } = req.body;
+      const { message_id, user, role, message_text, timestamp, tags, phase } = req.body;
 
       const record = await base("Messages").create([
         {
           fields: {
-            user_id,         // update if your Airtable column name is different
-            role,
-            content,
-            timestamp: new Date().toISOString(),
-            ...(tags ? { tags } : {})
+            "Message ID": message_id,      // ex: msg_001
+            "Users": user,                 // ex: user id or name
+            "Role": role,                  // "user" or "sol"
+            "Message Text": message_text,  // the text content
+            "Timestamp": timestamp || new Date().toISOString(),
+            "Tags": tags,                  // array of tags
+            "Phase": phase                 // ex: Expansion
           }
         }
       ]);
@@ -26,17 +30,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error(err);
       res.status(500).json({ success: false, error: err.message });
     }
-  } else if (req.method === "GET") {
+  }
+
+  if (req.method === "GET") {
     try {
       const records = await base("Messages")
-        .select({ maxRecords: 10, sort: [{ field: "timestamp", direction: "desc" }] })
+        .select({ maxRecords: 20, sort: [{ field: "Timestamp", direction: "desc" }] })
         .all();
 
       res.status(200).json(records.map((r) => r.fields));
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
-  } else {
+  }
+
+  if (req.method !== "POST" && req.method !== "GET") {
     res.setHeader("Allow", ["GET", "POST"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
