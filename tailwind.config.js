@@ -18,4 +18,4 @@ module.exports = {
   plugins: []
 };
 
-<span className="animate-pulse text-2xl">✷</span>
+
