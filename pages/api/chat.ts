@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { OpenAI } from "openai";
 import formidable from "formidable";
-import { logToAirtable } from "@/utils/logToAirtable";
 import fs from "fs";
+import { OpenAI } from "openai";
+import { logToAirtable } from "../../utils/logToAirtable";
 
 export const config = {
   api: {
@@ -16,7 +16,6 @@ const openai = new OpenAI({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const form = formidable({ multiples: false });
-
   form.parse(req, async (err, fields, files) => {
     try {
       const userMessage = fields.message?.toString() || "";
@@ -28,25 +27,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         messages: [{ role: "user", content: userMessage }],
       });
 
-      const solReply = completion.choices[0].message.content;
+      const solReply = completion.choices[0].message.content || "";
 
-      // 🔁 Ask GPT to generate tags for Sol's response
-      const tagCompletion = await openai.chat.completions.create({
+      // Use GPT to generate tags based on the Sol reply
+      const tagResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are a helpful assistant that classifies responses using up to 4 emotionally intelligent tags (like support, visibility, resistance, reframe, empowerment, safety, etc.). Return the tags only, separated by commas." },
-          { role: "user", content: solReply || "" },
+          { role: "system", content: "Given a coaching response, return 2–4 simple lowercase tags that describe its emotional tone or purpose. Use only one word per tag (e.g. support, clarity, visibility, reframe, truth, pattern, expansion)." },
+          { role: "user", content: solReply },
         ],
       });
 
-      const tagsText = tagCompletion.choices[0].message.content || "";
-      const tags = tagsText.split(",").map((tag) => tag.trim()).filter(Boolean);
+      const tagText = tagResponse.choices[0].message.content || "";
+      const tags = tagText
+        .split(/[\n,]+/)
+        .map(tag => tag.trim().toLowerCase())
+        .filter(tag => !!tag && tag.length < 30);
 
-      // ✅ Log user + Sol messages
+      // Log user + Sol messages to Airtable
       await logToAirtable({ email, role: "user", messageText: userMessage });
       await logToAirtable({ email, role: "sol", messageText: solReply, tags });
 
-      res.status(200).json({ reply: solReply, tags });
+      res.status(200).json({ reply: solReply });
     } catch (error) {
       console.error("Unexpected error:", error);
       res.status(500).json({ error: "Internal server error" });

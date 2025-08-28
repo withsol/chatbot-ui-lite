@@ -1,18 +1,13 @@
-import Airtable from "airtable";
+import { base } from "./airtableClient";
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID || "");
-
-export async function logToAirtable({
-  email,
-  role,
-  messageText,
-  tags = [],
-}: {
+interface LogMessageOptions {
   email: string;
   role: "user" | "sol";
   messageText: string;
   tags?: string[];
-}) {
+}
+
+export async function logToAirtable({ email, role, messageText, tags = [] }: LogMessageOptions) {
   try {
     await base("Messages").create([
       {
