@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 
 interface Props {
   message: Message;
+  isLast?: boolean;
 }
 
 export const ChatMessage: FC<Props> = ({ message }) => {
