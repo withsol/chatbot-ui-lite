@@ -1,5 +1,6 @@
 import { Message } from "@/types";
-import { FC, useEffect, useState } from "react";
+import type { FC } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 interface Props {
@@ -7,11 +8,11 @@ interface Props {
   isLast?: boolean;
 }
 
-export const ChatMessage: FC<Props> = ({ message }) => {
+export const ChatMessage: FC<Props> = ({ message, isLast }) => {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
 
-  // For typing animation
+  // Typing animation for assistant
   const [displayedText, setDisplayedText] = useState(
     isUser ? message.content : ""
   );
@@ -23,14 +24,16 @@ export const ChatMessage: FC<Props> = ({ message }) => {
         setDisplayedText(message.content.slice(0, i));
         i++;
         if (i > message.content.length) clearInterval(interval);
-      }, 5); // speed (ms per character)
+      }, 5); // ms per character
       return () => clearInterval(interval);
     }
   }, [isAssistant, message.content]);
 
   return (
     <div
-      className={`flex ${isUser ? "justify-end" : "justify-start"} my-2 animate-fadeInUp`}
+      className={`flex ${isUser ? "justify-end" : "justify-start"} my-2 animate-fadeInUp ${
+        isLast ? "border border-neutral-300 rounded-lg" : ""
+      }`}
     >
       <div
         className={`max-w-[80%] px-4 py-3 rounded-lg shadow-sm transition-all duration-300 ${
