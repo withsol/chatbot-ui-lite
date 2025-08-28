@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Chat } from "../components/Chat/Chat";
 import { Message } from "../types";
-import { logToAirtable } from "@/utils/logToAirtable";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -16,18 +15,6 @@ export default function Home() {
   const handleSend = async (text: string, email: string, file?: File | null) => {
     const userMessage: Message = { role: "user", content: text, email };
     setMessages((prev) => [...prev, userMessage]);
-
-    // ✅ Log USER message
-    try {
-      await logToAirtable({
-        email,
-        role: "user",
-        messageText: text,
-        tags: [], // GPT can generate tags later
-      });
-    } catch (err) {
-      console.error("Airtable log error (user):", err);
-    }
 
     // Prepare request
     const formData = new FormData();
@@ -69,18 +56,6 @@ export default function Home() {
             };
             return updated;
           });
-        }
-
-        // ✅ Log ASSISTANT message
-        try {
-          await logToAirtable({
-            email,
-            role: "sol",
-            messageText: reply,
-            tags: [], // GPT can generate tags later
-          });
-        } catch (err) {
-          console.error("Airtable log error (assistant):", err);
         }
       }
     } catch (err) {
